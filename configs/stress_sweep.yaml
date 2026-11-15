@@ -1,0 +1,14 @@
+# Phase 1 stress-testing grid (spec Section 3, Table 1).
+sweep:
+  axis_1_recurrence:        # omega (rho_rec), Stress Axis 1
+    omega: [0.0, 1.0, 3.5, 8.0]
+    dataset: [emnist_balanced, cifar10]
+  axis_2_population:        # client population scaling / partial participation
+    num_clients: 20         # K = 20
+    participation: [1.0, 0.5, 0.25, 0.15]   # C_frac -> {20, 10, 5, 3} active clients
+  axis_3_asynchrony:        # asynchronous task boundaries (Stress Axis 3)
+    stagger_rounds: [0, 10, 25]             # Delta R_sync
+    task_length_pool: [25, 35, 40, 45, 55]  # per-client R_t^(k)
+  axis_4_privacy:           # zCDP noise floor & sparsification sweep
+    eps_zcdp: [0.3, 0.8, 1.8, 5.0]          # plus eps = infinity baseline
+    sparsify_keep: [0.2, 0.5, 0.8, 1.0]     # kappa

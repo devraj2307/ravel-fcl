@@ -1,0 +1,47 @@
+# Baseline hyperparameters for the RAVEL-FCL replication (spec Sections 1.2, 2, 5.2).
+# Every value below is taken verbatim from the technical specification.
+experiment:
+  name: baseline_emnist
+  seed: 0
+
+federated:
+  num_clients: 5            # K = 5
+  total_rounds: 200         # R = 200 global communication rounds
+  num_tasks: 5              # T = 5 sequential tasks
+  rounds_per_task: 40       # R_t = R / T = 40
+  local_epochs: 5           # E = 5 local epochs (Section 2.4)
+  participation: 1.0        # baseline: 100% client participation (Stress Axis 2 varies this)
+
+stream:
+  omega: 1.0                # recurrence bias (paper default; Stress Axis 1 sweeps {0.0, 1.0, 3.5, 8.0})
+  classes_per_task: [2, 3, 4]   # |C_t^(k)| in {2, 3, 4} (Section 2.1)
+  transition_offsets: [0, 0, 0, 0, 0]   # Delta R = 0 -> synchronous task boundaries
+
+model:
+  latent_dim: 128           # z ~ N(0, I_128) (Section 2.2)
+  img_size: 32              # 28x28 MNIST/EMNIST inputs padded to 32x32 (Section 6.3)
+  feature_dim: 512          # F: X -> R^512 (ResNet-18)
+  projector: [512, 256, 128]  # P: R^512 -> R^256 -> R^128 with ReLU
+  spectral_norm: true
+
+loss:
+  alpha_margin: 0.9         # alpha  (Eq. 3)
+  beta_margin: 0.5          # beta   (Eq. 3)
+  tau_d2d: 0.1              # tau    (Eq. 4)
+  lambda_cls: 0.5           # lambda_cls   (Eq. 5)
+  lambda_align: 1.0         # lambda_align (Eq. 5 / Section 2.3)
+  t_align: 2.0              # T_align (Section 2.3)
+  eps_smooth: 0.05          # label smoothing of q_onehot(y_syn)
+  eps: 1.0e-8               # eps_eps (Eq. 2)
+
+replay:
+  eta_dp_std: 0.01          # eta_dp ~ N(0, 0.01^2 I) on replayed samples (Section 2.3)
+
+privacy:                    # Section 2.4 (zCDP budget eps = 1.8, delta = 1e-5)
+  topk_keep: 0.8            # top-80% magnitude sparsification
+  quant_bits: 8             # 8-bit uniform quantization
+  eps_zcdp: 1.8
+  delta_zcdp: 1.0e-5
+
+evcl:
+  fisher_ema_decay: 0.8     # 3-round EMA of the Fisher matrix (Section 1.1)

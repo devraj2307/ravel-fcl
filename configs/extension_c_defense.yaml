@@ -1,0 +1,63 @@
+# Extension C defense + Section 4.2 poisoning attacks.
+#
+# Every value below is the default implemented in
+#   federated/defense.py        (Stage 1: class-aware multi-kernel RBF-MMD)
+#   federated/server.py         (Stage 2: dual-gated synthetic FIM, Eq. 20)
+#   attacks/poisoning.py        (Eqs. 11-12)
+# Override in the experiment config to sweep the defence.
+defense:
+  # ---------------------------------------------------------------- Stage 1
+  mmd:
+    enabled: true
+    kernel: rbf                     # K(u,v) = sum_l exp(-||u-v||^2 / (2 sigma_l^2))
+    sigmas: [0.2, 0.5, 1.0, 2.0]    # RBF bandwidths (Eq. 14)
+    val_batch_size: 64              # M synthetic samples per active class
+    eta_js: 0.5                     # eta_js: weight of the classifier JS term (Eq. 16)
+    temperature: 2.0                # T_align softmax temperature of the JS probe
+    margin_n: 0.25                  # m_n inter-class margin for new classes (Eq. 17)
+    z_max: 2.5                      # hard rejection on the robust z-score (Eq. 19)
+    gamma_trust: 2.0                # Boltzmann temperature gamma_trust (Eq. 19)
+    mad_scale: 1.4826               # MAD -> sigma consistency constant (Eq. 18)
+    eps: 1.0e-6                     # numerical floor added to the MAD
+
+  # ---------------------------------------------------------------- Stage 2
+  dual_gate:
+    enabled: true                   # Eq. 20: confidence & entropy & realism
+    conf_thresh: 0.6                # tau_conf (classifier confidence)
+    ent_thresh: 0.45                # tau_ent  (normalized entropy H_norm)
+    real_thresh: 0.45               # tau_real (discriminator realism D_adv)
+    min_accept_frac: 0.15           # per-class / global fallback threshold (Section 5.3)
+    fisher_ema_decay: 0.8           # gamma_ema 3-round Fisher EMA (Eq. 10)
+
+  evcl:
+    lambda_evcl: 1000.0             # lambda_evcl of Eq. 18
+    sigma_init: 0.1                 # sigma_init of the variational posterior
+    logvar_bounds: [-12.0, 0.0]     # admissible log sigma^2 band
+    lr: 1.0e-3
+    steps: 3
+
+  # Defense pipeline: screen with theta_g^{r-1}, G_g^{r-1} *before* aggregation,
+  # consolidate with G_r^g *after* aggregation.
+  pipeline:
+    screen_before_aggregate: true
+    consolidate_after_aggregate: true
+
+# ---------------------------------------------------------------- Attacks
+attacks:
+  # Attack A: targeted recurring-class conditional label flipping (Eq. 11).
+  label_flip:
+    enabled: true
+    source_class: 2                 # recurring class c_src (seen in an earlier task)
+    target_class: 5                 # target class c_tgt
+    eta_boost: 2.0                  # upload amplification in [1.5, 3.0]
+
+  # Attack B: stealthy zCDP-bounded sign-flipped perturbation (Eq. 12).
+  stealthy:
+    enabled: true
+    gamma_flip: 1.5                 # -gamma * Delta
+    zcdp_sigma: null                # null -> sigma_zcdp(1.0, eps=1.8, delta=1e-5, R=1)
+    sigma_honest: null              # null -> per-tensor std of the honest upload
+    match_norm: true                # keep ||Delta_adv|| = ||Delta_honest||
+
+# Which client IDs are malicious (baseline uses a single compromised client).
+malicious_clients: [0]
