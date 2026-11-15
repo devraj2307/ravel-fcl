@@ -18,6 +18,9 @@ data/raw/
 results/
 *.log
 
+# Local helper files
+repo_description.txt
+
 # OS / editor files
 .DS_Store
 .idea/
